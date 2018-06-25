@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,6 +16,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.wangcanhui.predictableweather.MainActivity;
 import com.wangcanhui.predictableweather.R;
 import com.wangcanhui.predictableweather.WeatherActivity;
 import com.wangcanhui.predictableweather.db.City;
@@ -26,7 +27,6 @@ import com.wangcanhui.predictableweather.util.Utility;
 
 import org.litepal.LitePal;
 import org.litepal.crud.DataSupport;
-import org.litepal.crud.LitePalSupport;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ public class ChooseAreaFragment extends Fragment {
         titleText = (TextView)view.findViewById(R.id.title_text);
         backButton = (Button)view.findViewById(R.id.back_button);
         listView = (ListView)view.findViewById(R.id.list_view);
-        adapter = new ArrayAdapter<String>(getContext(),android.R.layout.simple_list_item_1,dataList);
+        adapter = new ArrayAdapter<String>(getActivity(),android.R.layout.simple_list_item_1,dataList);
         listView.setAdapter(adapter);
         return view;
     }
@@ -78,16 +78,23 @@ public class ChooseAreaFragment extends Fragment {
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
                 if (currentLevel == LEVEL_PROVINCE){
                     selectedProvince = provinceList.get(i);
-                    queryProvinces();
+                    queryCities();
                 }else if (currentLevel == LEVEL_CITY){
                     selectedCity = cityList.get(i);
-                    queryCities();
+                    queryCounties();
                 }else if (currentLevel == LEVEL_COUNTY){
                     String weatherId = countyList.get(i).getWeatherId();
-                    Intent intent = new Intent(getActivity(), WeatherActivity.class);
-                    intent.putExtra("weather_id",weatherId);
-                    startActivity(intent);
-                    getActivity().finish();
+                    if (getActivity() instanceof MainActivity){
+                        Intent intent = new Intent(getActivity(), WeatherActivity.class);
+                        intent.putExtra("weather_id",weatherId);
+                        startActivity(intent);
+                        getActivity().finish();
+                    }else if (getActivity() instanceof WeatherActivity){
+                        WeatherActivity activity = (WeatherActivity) getActivity();
+                        activity.drawerLayout.closeDrawers();
+                        activity.swipeRefresh.setRefreshing(true);
+                        activity.requestWeather(weatherId);
+                    }
                 }
             }
         });
@@ -95,9 +102,9 @@ public class ChooseAreaFragment extends Fragment {
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if (currentLevel == LEVEL_CITY){
+                if (currentLevel == LEVEL_COUNTY){
                     queryCities();
-                }else if (currentLevel == LEVEL_PROVINCE){
+                }else if (currentLevel == LEVEL_CITY){
                     queryProvinces();
                 }
             }
@@ -105,6 +112,7 @@ public class ChooseAreaFragment extends Fragment {
 
         queryProvinces();
     }
+
     /*
     * 查询全国所有的省，优先从数据库查询，如果没有查询到再去服务器上查询
     * */
@@ -112,6 +120,7 @@ public class ChooseAreaFragment extends Fragment {
         titleText.setText("中国");
         backButton.setVisibility(View.GONE);
         provinceList = LitePal.findAll(Province.class,0);
+        provinceList = DataSupport.findAll(Province.class);
         if (provinceList.size() > 0){
             dataList.clear();
             for (Province province: provinceList) {
@@ -143,7 +152,7 @@ public class ChooseAreaFragment extends Fragment {
             currentLevel = LEVEL_CITY;
         }else {
             int provinceCode = selectedProvince.getProvinceCode();
-            String address = "http://guolin.tech/api/china" + provinceCode;
+            String address = "http://guolin.tech/api/china/" + provinceCode;
             queryFromServer(address,"city");
         }
     }
@@ -208,8 +217,15 @@ public class ChooseAreaFragment extends Fragment {
                             }else if ("city".equals(type)){
                                 queryCities();
                             }else if ("county".equals(type)){
-
+                                queryCounties();
                             }
+                        }
+                    });
+                }else{
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            closeProgressDialog();
                         }
                     });
                 }

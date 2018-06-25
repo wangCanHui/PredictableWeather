@@ -6,18 +6,17 @@
     android:layout_height="match_parent"
     tools:context="com.wangcanhui.predictableweather.MainActivity">
 
-    <!--<TextView-->
-        <!--android:layout_width="wrap_content"-->
-        <!--android:layout_height="wrap_content"-->
-        <!--android:text="Hello World!"-->
-        <!--app:layout_constraintBottom_toBottomOf="parent"-->
-        <!--app:layout_constraintLeft_toLeftOf="parent"-->
-        <!--app:layout_constraintRight_toRightOf="parent"-->
-        <!--app:layout_constraintTop_toTopOf="parent" />-->
-    <fragment
-        android:id="@+id/choose_area_fragment"
-        android:name="com.wangcanhui.predictableweather.fragment.ChooseAreaFragment"
+    <FrameLayout
+        android:id="@+id/main_layout"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent">
+        <fragment
+            android:id="@+id/choose_area_fragment"
+            android:name="com.wangcanhui.predictableweather.fragment.ChooseAreaFragment"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </FrameLayout>
+
 
 </android.support.constraint.ConstraintLayout>
+
